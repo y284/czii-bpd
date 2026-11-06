@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "czii-bpd"
+version = "1.1.0"
+description = "Lightweight 3D U-Net for particle picking in cryo-electron tomograms (CZII, 5th / 931)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = ["torch>=2.3", "numpy", "pandas", "scipy", "zarr<3", "connected-components-3d"]
+
+[project.optional-dependencies]
+export = ["onnx", "onnxruntime-gpu", "tensorrt"]
+dev = ["pytest", "ruff", "onnx", "onnxruntime"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+ignore = ["B023", "B905"]
