@@ -2,99 +2,59 @@
 
 [![ci](https://github.com/y284/czii-bpd/actions/workflows/ci.yml/badge.svg)](https://github.com/y284/czii-bpd/actions/workflows/ci.yml)
 
-**5th of 931 teams — gold medal** in the Kaggle competition [CZII — CryoET Object Identification](https://www.kaggle.com/competitions/czii-cryo-et-object-identification). The model is published by the Chan Zuckerberg Imaging Institute as the official model card [**BPD**](MODEL_CARD_URL).
+Locate 5 types of protein complexes (apo-ferritin, β-galactosidase, ribosome, thyroglobulin, virus-like particle) in 184×630×630 cryo-electron tomograms, scored with a weighted F-β (β = 4).
 
-The task: find the centre of every protein complex of 5 types (apo-ferritin, β-galactosidase, ribosome, thyroglobulin, virus-like particle) in 184×630×630 tomograms, scored with a weighted F-β (β = 4).
+## Competition solution — 5th of 931, gold medal
 
-## Method
+The solution submitted to [CZII — CryoET Object Identification](https://www.kaggle.com/competitions/czii-cryo-et-object-identification), private score **0.7825**, published by the Chan Zuckerberg Imaging Institute as the official model card [**BPD**](MODEL_CARD_URL).
 
-```mermaid
-flowchart LR
-    T["tomogram<br/>184×630×630<br/>stored as uint8"] --> W["full-depth windows<br/>36 × 184×128×128"]
-    W --> A["3 views<br/>identity, z-flip,<br/>90° rotation"]
-    A --> M["3D U-Net<br/>350K params"]
-    M --> P["averaged class<br/>probabilities"]
-    P --> C["threshold +<br/>connected components<br/>per class"]
-    C --> X["centroids<br/>(x, y, z) in Å"]
-```
+- **Detection as segmentation.** Each particle is labelled as a small sphere and every voxel is classified into background + 5 classes; particles are the connected components above per-class thresholds, their centroids the predictions.
+- **3D U-Net designed from scratch.** 350,830 parameters (1.4 MB), trained on random 128³ crops with flips, 90° rotations and intensity jitter.
+- **Inference.** 72 overlapping 128³ windows per tomogram, 7-view test-time augmentation, ensemble of 4 seeds. The final models were trained on all 7 training runs.
 
-- **Detection as segmentation.** Each particle is labelled as a small sphere (radius 0.8·log2 of its radius in voxels) and the network classifies every voxel into background + 5 classes. Particles are the connected components above a per-class threshold; their centroids are the predictions.
-- **A small network.** A 3-level 3D U-Net (28/32/36 channels, about 350K parameters, 1.4 MB) trained from scratch on random 128³ crops with flips, 90° rotations and intensity jitter.
-- **Inference.** The network is fully convolutional, so each window spans the whole depth (184×128×128, 36 windows per tomogram, overlapping in y and x and weighted towards their centre). Each window is predicted in 3 views and the probabilities are averaged. The per-class thresholds are fixed, never tuned on the evaluation data.
+## Post-competition work
 
-## Variants
+Done afterwards on a held-out tomogram (`TS_5_4`), with models trained on the other 6 runs, 2 seeds per variant, and the competition thresholds unchanged.
 
-| variant | output | normalisation | parameters |
-|---|---|---|---:|
-| `full` | full resolution | BatchNorm | 350,830 |
-| `half` | 1/2 resolution | BatchNorm | 342,542 |
-| `half_in` | 1/2 resolution | InstanceNorm | 342,542 |
+- **Half-resolution decoder (`half`):** the decoder stops at 1/2 resolution, so particle extraction runs on 8× fewer voxels.
+- **InstanceNorm variant (`half_in`):** tested as a way to train faster.
+- **Lighter inference:** full-depth windows (36 per tomogram instead of 72) and 3 views (identity, z-flip, 90° rotation) instead of 7.
+- **Model selection by TTA:** every epoch is scored with 3-view TTA, less noisy than a single view, and the best epoch is kept.
+- **TensorRT FP16 export,** checked against PyTorch on the whole held-out tomogram.
+- **Engineering:** uint8 tomograms (73 MB instead of 146 MB), one model per GPU in parallel threads, bf16 or fp16 chosen per GPU, tests and CI.
 
-- **Half resolution.** The decoder stops at 1/2 resolution: the full-resolution stage and the transposed upsampling are gone, so the network does less work and the connected components run on 8× fewer voxels. Labels are rendered on the coarse grid with the half-voxel shift of trilinear downsampling taken into account (`render_labels`).
-- **InstanceNorm.** `half_in` normalises each crop with its own statistics instead of statistics over the batch of 4 crops, which is expected to make training converge faster.
-- **TensorRT FP16.** Each model is exported to ONNX, built into a TensorRT engine, and checked on a whole held-out tomogram against PyTorch: F4, time, and the largest probability difference.
-- **TTA for model selection.** Every checkpoint is scored with 3-view TTA rather than a single view: its scores are less noisy from one epoch to the next, so the best epoch is picked more reliably.
+| variant | output | normalisation | best F4 (seed 42 / 90) | mean F4, epochs 20–36 | training time |
+|---|---|---|---|---:|---:|
+| `full` | full resolution | BatchNorm | 0.791 / 0.781 | 0.763 | 189 min |
+| **`half`** | 1/2 resolution | BatchNorm | 0.772 / 0.798 | 0.758 | **100 min** |
+| `half_in` | 1/2 resolution | InstanceNorm | 0.771 / 0.777 | 0.736 | 109 min |
 
-## Results
+![held-out F4 per epoch](results/training_curves.png)
 
-Every model is trained with seeds 42 and 90 on 6 runs and scored on the held-out tomogram `TS_5_4` after every epoch; the best epoch is kept. All numbers use the same inference: 3 views, full-depth windows, fixed thresholds.
+Inference on `TS_5_4`, one T4, seed-42 model:
 
-### Accuracy — held-out F4
+| variant | backend | network | particle extraction | total | F4 | speed-up |
+|---|---|---:|---:|---:|---:|---:|
+| `full` | PyTorch FP16 | 11.5 s | 4.9 s | 16.5 s | 0.791 | 1.0× |
+| `full` | TensorRT FP16 | 6.5 s | 5.0 s | 11.4 s | 0.791 | 1.4× |
+| `half` | PyTorch FP16 | 6.1 s | 0.6 s | 6.7 s | 0.772 | 2.5× |
+| **`half`** | **TensorRT FP16** | **3.4 s** | **0.6 s** | **3.9 s** | **0.772** | **4.2×** |
 
-_Results from the Kaggle runs go here._
-
-### Speed and export check — `TS_5_4`, one T4
-
-_Results from the Kaggle runs go here._
-
-## Design notes
-
-- **uint8 tomograms.** Volumes are normalised to the training intensity window and stored on 256 levels over [−0.5, 1.5] in normalised units, which keeps the tails below the 5th and above the 99th percentile: 73 MB per tomogram instead of 146 MB in float16, rounding error ±0.004.
-- **One GPU per model.** With 2+ GPUs, independent models (one per seed and variant) train in parallel threads, one per GPU, instead of `DataParallel`. With a single GPU they run one after another. Models are built in the main thread, so a model's initialisation depends only on its seed.
-- **Mixed precision.** bfloat16 on GPUs that support it natively (compute capability ≥ 8), float16 with gradient scaling otherwise (Kaggle's T4).
-- **Architecture from the checkpoint.** `load_model` reads the resolution and normalisation of a checkpoint from its weights.
+- **Half resolution** matches full-resolution accuracy, trains 1.9× faster and runs 2.5× faster.
+- **TensorRT** gives the same F4 as PyTorch (probabilities within 0.005); with half resolution, inference is **4.2× faster** than the full-resolution model under PyTorch.
+- **InstanceNorm** did not help: no faster training (109 vs 100 min), later convergence, about 0.01 lower F4.
 
 ## Usage
 
 ```bash
-pip install -e .                    # add ".[export]" for ONNX Runtime and TensorRT
-export CZII_DATA=/path/to/czii-cryo-et-object-identification   # found automatically on Kaggle
-
-python -m czii_bpd.train --variants full half half_in --seeds 42 90 --fold 0 --eval tta
+pip install -e ".[export]"
+python -m czii_bpd.train --variants full half half_in --seeds 42 90 --fold 0
 python -m czii_bpd.export --checkpoints outputs/model_*_seed42_best.bin
 ```
 
-`train` writes `model_<variant>_seed<seed>_best.bin` (best held-out F4), `model_<variant>_seed<seed>.bin` (last epoch), `history.csv` and `results_training.json`; `--eval plain` scores epochs on a single view, `--smoke` runs 2 short epochs. `export` writes the ONNX files and `results_export.json`.
+The Kaggle runs behind these results are in [`notebooks/`](notebooks), the raw numbers in [`results/`](results). `pytest -q` checks each variant's output resolution, checkpoint loading and ONNX export; CI runs it with `ruff` on every push.
 
-On Kaggle, the notebooks in [`notebooks/`](notebooks) clone this repository and run the same commands (GPU T4 ×2).
-
-## Tests
-
-```bash
-pip install -e ".[dev]" && pytest -q
-```
-
-For each variant: the output has the expected resolution, a checkpoint loads back into the right architecture, and the ONNX export matches PyTorch. CI runs them with `ruff` on every push.
-
-## Limitations
-
-- Results come from a single held-out tomogram (about 130 particles), so differences around ±0.01 F4 are within noise.
-- The matching uses one-to-one assignment, close to but not identical with the official metric, so absolute scores differ slightly from the leaderboard.
-
-## Layout
-
-```
-src/czii_bpd/
-  config.py    paths, particles, thresholds, variants
-  data.py      uint8 loading, label rendering, training crops
-  model.py     3D U-Net, checkpoint loading
-  infer.py     full-depth windows, TTA views, connected components, metric
-  utils.py     devices, mixed precision, one-model-per-GPU runner
-  train.py     training with per-epoch held-out evaluation
-  export.py    ONNX / TensorRT export and check
-tests/         output resolution, checkpoint loading, ONNX export
-notebooks/     Kaggle notebooks
-```
+*Post-competition results come from a single held-out tomogram (about 130 particles): F4 differences around ±0.01 are within noise.*
 
 ## License
 

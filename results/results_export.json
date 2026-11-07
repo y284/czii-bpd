@@ -1,0 +1,50 @@
+{
+  "valid_run": "TS_5_4",
+  "eval": "tta",
+  "results": [
+    {
+      "variant": "full",
+      "backend": "PyTorch autocast float16",
+      "network_s": 11.51,
+      "components_s": 4.94,
+      "f4": 0.7909,
+      "max |Δ prob|": "0.0e+00",
+      "total_s": 16.45,
+      "network speed-up": 1.0,
+      "total speed-up": 1.0
+    },
+    {
+      "variant": "full",
+      "backend": "TensorRT FP16",
+      "network_s": 6.47,
+      "components_s": 4.97,
+      "f4": 0.7909,
+      "max |Δ prob|": "4.9e-03",
+      "total_s": 11.44,
+      "network speed-up": 1.78,
+      "total speed-up": 1.44
+    },
+    {
+      "variant": "half",
+      "backend": "PyTorch autocast float16",
+      "network_s": 6.11,
+      "components_s": 0.6,
+      "f4": 0.7723,
+      "max |Δ prob|": "0.0e+00",
+      "total_s": 6.71,
+      "network speed-up": 1.88,
+      "total speed-up": 2.45
+    },
+    {
+      "variant": "half",
+      "backend": "TensorRT FP16",
+      "network_s": 3.35,
+      "components_s": 0.59,
+      "f4": 0.7723,
+      "max |Δ prob|": "4.9e-03",
+      "total_s": 3.94,
+      "network speed-up": 3.44,
+      "total speed-up": 4.18
+    }
+  ]
+}

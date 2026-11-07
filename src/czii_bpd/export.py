@@ -50,6 +50,7 @@ def ort_forward(path, x, out):
 
     def forward(batch):
         x.copy_(batch)
+        torch.cuda.current_stream().synchronize()  # ONNX Runtime runs on its own stream and would read x too early
         session.run_with_iobinding(binding)
         return out
 
