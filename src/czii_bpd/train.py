@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader
 from . import config as C
 from .data import PatchDataset, load_picks, load_volume, render_labels
 from .infer import VIEWS, evaluate, torch_forward, truth_angstrom
-from .model import UNet3D
+from .model import build_model
 from .utils import amp_dtype, autocast, run_on_devices, seed_everything
 
 
@@ -98,7 +98,7 @@ def train(device, job, data, valid, args):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--variants", nargs="+", default=["full", "half"], choices=list(C.STRIDE))
+    p.add_argument("--variants", nargs="+", default=list(C.VARIANTS), choices=list(C.VARIANTS))
     p.add_argument("--seeds", nargs="+", type=int, default=[42, 90])
     p.add_argument("--fold", type=int, default=0, help="index of the held-out run in RUNS")
     p.add_argument("--eval", default="tta", choices=list(VIEWS), help="views used to score each epoch")
@@ -128,7 +128,7 @@ def main():
     jobs = []
     for variant, seed in product(args.variants, args.seeds):
         seed_everything(seed)
-        jobs.append((variant, seed, UNet3D(half=C.STRIDE[variant] == 2)))
+        jobs.append((variant, seed, build_model(variant)))
     results = run_on_devices(jobs, lambda device, job: train(device, job, data, valid, args))
 
     summary, history = [s for s, _ in results], [h for _, hs in results for h in hs]

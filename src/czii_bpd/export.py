@@ -99,7 +99,7 @@ def free():
 
 def check(path, valid, views, device, out_dir):
     model = load_model(path, device).requires_grad_(False)
-    name, stride = ("half", 2) if model.half_res else ("full", 1)
+    name, stride = model.variant, 2 if model.half_res else 1
     shape = (len(views), valid["volume"].shape[0], WINDOW, WINDOW)
     x16 = torch.zeros(shape, dtype=torch.float16, device=device)
     with torch.no_grad():

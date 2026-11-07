@@ -32,4 +32,6 @@ PARTICLES = {
 }
 WEIGHTS = {"apo-ferritin": 1, "beta-galactosidase": 2, "ribosome": 1, "thyroglobulin": 2, "virus-like-particle": 1}
 BLOB_FACTOR = 7  # minimum component size = label sphere volume / BLOB_FACTOR
-STRIDE = {"full": 1, "half": 2}  # output voxel size of each variant, in input voxels
+# variant: (output voxel size in input voxels, normalisation layers)
+VARIANTS = {"full": (1, "batch"), "half": (2, "batch"), "half_in": (2, "instance")}
+STRIDE = {v: s for v, (s, _) in VARIANTS.items()}
