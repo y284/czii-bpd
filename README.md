@@ -23,25 +23,27 @@ Done afterwards on a held-out tomogram (`TS_5_4`), with models trained on the ot
 - **TensorRT FP16 export,** checked against PyTorch on the whole held-out tomogram.
 - **Engineering:** uint8 tomograms (73 MB instead of 146 MB), one model per GPU in parallel threads, bf16 or fp16 chosen per GPU, tests and CI.
 
-| variant | output | normalisation | best F4 (seed 42 / 90) | mean F4, epochs 20–36 | training time |
+| variant | output | normalisation | best F4 (seed 42 / 90) | mean F4, epochs 28–36 | training time |
 |---|---|---|---|---:|---:|
 | `full` | full resolution | BatchNorm | 0.791 / 0.781 | 0.763 | 189 min |
-| **`half`** | 1/2 resolution | BatchNorm | 0.772 / 0.798 | 0.758 | **100 min** |
-| `half_in` | 1/2 resolution | InstanceNorm | 0.771 / 0.777 | 0.736 | 109 min |
+| **`half`** | 1/2 resolution | BatchNorm | 0.772 / 0.798 | 0.767 | **100 min** |
+| `half_in` | 1/2 resolution | InstanceNorm | 0.771 / 0.777 | 0.755 | 109 min |
 
-![held-out F4 per epoch](results/training_curves.png)
+![held-out F4 per epoch, mean of the two seeds](results/training_curves.png)
 
 Inference on `TS_5_4`, one T4, seed-42 model:
 
-| variant | backend | network | particle extraction | total | F4 | speed-up |
-|---|---|---:|---:|---:|---:|---:|
-| `full` | PyTorch FP16 | 11.5 s | 4.9 s | 16.5 s | 0.791 | 1.0× |
-| `full` | TensorRT FP16 | 6.5 s | 5.0 s | 11.4 s | 0.791 | 1.4× |
-| `half` | PyTorch FP16 | 6.1 s | 0.6 s | 6.7 s | 0.772 | 2.5× |
-| **`half`** | **TensorRT FP16** | **3.4 s** | **0.6 s** | **3.9 s** | **0.772** | **4.2×** |
+| variant | backend | network | particle extraction | total | F4 | max \|Δ prob\| | speed-up |
+|---|---|---:|---:|---:|---:|---:|---:|
+| `full` | PyTorch FP16 | 11.6 s | 5.2 s | 16.9 s | 0.791 | — | 1.0× |
+| `full` | ONNX Runtime FP16 | 11.2 s | 5.1 s | 16.4 s | 0.791 | 0.004 | 1.0× |
+| `full` | TensorRT FP16 | 6.4 s | 5.2 s | 11.6 s | 0.791 | 0.005 | 1.5× |
+| `half` | PyTorch FP16 | 6.0 s | 0.6 s | 6.6 s | 0.772 | — | 2.6× |
+| `half` | ONNX Runtime FP16 | 5.8 s | 0.6 s | 6.4 s | 0.772 | 0.004 | 2.6× |
+| **`half`** | **TensorRT FP16** | **3.3 s** | **0.6 s** | **3.9 s** | **0.772** | **0.005** | **4.3×** |
 
-- **Half resolution** matches full-resolution accuracy, trains 1.9× faster and runs 2.5× faster.
-- **TensorRT** gives the same F4 as PyTorch (probabilities within 0.005); with half resolution, inference is **4.2× faster** than the full-resolution model under PyTorch.
+- **Half resolution** matches full-resolution accuracy, trains 1.9× faster and runs 2.6× faster.
+- **ONNX Runtime and TensorRT** give the same F4 as PyTorch, with probabilities within 0.005. TensorRT nearly halves the network time; with half resolution, inference is **4.3× faster** than the full-resolution model under PyTorch.
 - **InstanceNorm** did not help: no faster training (109 vs 100 min), later convergence, about 0.01 lower F4.
 
 ## Usage
@@ -56,6 +58,20 @@ The Kaggle runs behind these results are in [`notebooks/`](notebooks), the raw n
 
 *Post-competition results come from a single held-out tomogram (about 130 particles): F4 differences around ±0.01 are within noise.*
 
+## Citation
+
+The competition and its data:
+
+```bibtex
+@misc{czii-cryo-et-object-identification,
+    author = {Kyle Harrington* and Mohammadreza Paraan* and Anchi Cheng and Utz Heinrich Ermel and Saugat Kandel and Dari Kimanius and Elizabeth Montabana and Ariana Peck and Jonathan Schwartz and Daniel Serwas and Hannah Siems and Feng Wang and Yue Yu and Zhuowen Zhao and Shawn Zheng and Walter Reade and Maggie Demkin and Kristen Maitland and Dannielle McCarthy and Matthias Haury and David Agard and Clinton Potter and Bridget Carragher},
+    title = {CZII - CryoET Object Identification},
+    year = {2024},
+    howpublished = {\url{https://www.kaggle.com/competitions/czii-cryo-et-object-identification}},
+    note = {Kaggle}
+}
+```
+
 ## License
 
-MIT
+[Apache 2.0](LICENSE)

@@ -7,7 +7,7 @@ name = "czii-bpd"
 version = "1.1.0"
 description = "Lightweight 3D U-Net for particle picking in cryo-electron tomograms (CZII, 5th / 931)"
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 dependencies = ["torch>=2.3", "numpy", "pandas", "scipy", "zarr<3", "connected-components-3d"]
 

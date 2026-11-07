@@ -5,46 +5,68 @@
     {
       "variant": "full",
       "backend": "PyTorch autocast float16",
-      "network_s": 11.51,
-      "components_s": 4.94,
+      "network_s": 11.62,
+      "components_s": 5.24,
       "f4": 0.7909,
       "max |Δ prob|": "0.0e+00",
-      "total_s": 16.45,
+      "total_s": 16.86,
       "network speed-up": 1.0,
       "total speed-up": 1.0
     },
     {
       "variant": "full",
+      "backend": "ONNX Runtime FP16",
+      "network_s": 11.23,
+      "components_s": 5.13,
+      "f4": 0.7909,
+      "max |Δ prob|": "4.4e-03",
+      "total_s": 16.36,
+      "network speed-up": 1.03,
+      "total speed-up": 1.03
+    },
+    {
+      "variant": "full",
       "backend": "TensorRT FP16",
-      "network_s": 6.47,
-      "components_s": 4.97,
+      "network_s": 6.4,
+      "components_s": 5.15,
       "f4": 0.7909,
       "max |Δ prob|": "4.9e-03",
-      "total_s": 11.44,
-      "network speed-up": 1.78,
-      "total speed-up": 1.44
+      "total_s": 11.55,
+      "network speed-up": 1.82,
+      "total speed-up": 1.46
     },
     {
       "variant": "half",
       "backend": "PyTorch autocast float16",
-      "network_s": 6.11,
-      "components_s": 0.6,
+      "network_s": 5.97,
+      "components_s": 0.62,
       "f4": 0.7723,
       "max |Δ prob|": "0.0e+00",
-      "total_s": 6.71,
-      "network speed-up": 1.88,
-      "total speed-up": 2.45
+      "total_s": 6.59,
+      "network speed-up": 1.95,
+      "total speed-up": 2.56
+    },
+    {
+      "variant": "half",
+      "backend": "ONNX Runtime FP16",
+      "network_s": 5.81,
+      "components_s": 0.62,
+      "f4": 0.7723,
+      "max |Δ prob|": "3.7e-03",
+      "total_s": 6.43,
+      "network speed-up": 2.0,
+      "total speed-up": 2.62
     },
     {
       "variant": "half",
       "backend": "TensorRT FP16",
-      "network_s": 3.35,
-      "components_s": 0.59,
+      "network_s": 3.27,
+      "components_s": 0.63,
       "f4": 0.7723,
       "max |Δ prob|": "4.9e-03",
-      "total_s": 3.94,
-      "network speed-up": 3.44,
-      "total speed-up": 4.18
+      "total_s": 3.9,
+      "network speed-up": 3.55,
+      "total speed-up": 4.32
     }
   ]
 }
