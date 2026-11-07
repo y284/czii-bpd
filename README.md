@@ -6,7 +6,7 @@ Locate 5 types of protein complexes (apo-ferritin, β-galactosidase, ribosome, t
 
 ## Competition solution — 5th of 931, gold medal
 
-The solution submitted to [CZII — CryoET Object Identification](https://www.kaggle.com/competitions/czii-cryo-et-object-identification), private score **0.7825**, published by the Chan Zuckerberg Imaging Institute as the official model card [**BPD**](MODEL_CARD_URL).
+The solution submitted to [CZII — CryoET Object Identification](https://www.kaggle.com/competitions/czii-cryo-et-object-identification), private score **0.7825**, published by the Chan Zuckerberg Imaging Institute as the official model card [**BPD**](https://virtualcellmodels.cziscience.com/model/bpd).
 
 - **Detection as segmentation.** Each particle is labelled as a small sphere and every voxel is classified into background + 5 classes; particles are the connected components above per-class thresholds, their centroids the predictions.
 - **3D U-Net designed from scratch.** 350,830 parameters (1.4 MB), trained on random 128³ crops with flips, 90° rotations and intensity jitter.
